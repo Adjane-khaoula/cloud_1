@@ -1,0 +1,21 @@
+- name: Install Docker, Docker Compose, and Make
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+      - make
+    state: present
+    update_cache: yes
+
+- name: Enable and start Docker
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: Add entry to /etc/hosts for kadjane.42.fr
+  lineinfile:
+    path: /etc/hosts
+    line: "10.16.79.228 kadjane.42.fr"
+    state: present
+    create: yes

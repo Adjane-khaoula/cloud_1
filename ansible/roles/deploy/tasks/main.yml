@@ -1,0 +1,21 @@
+- name: Create app directory
+  file:
+    path: /opt/cloud_inception
+    state: directory
+    mode: '0755'
+
+- name: Copy project files
+  copy:
+    src: "{{ playbook_dir }}/../inception"
+    dest: /opt/cloud_inception/
+    mode: '0755'
+
+# - name: Copy docker-compose.yml
+#   copy:
+#     src: "{{ playbook_dir }}/../inception/srcs"
+#     dest: /opt/cloud_inception/docker-compose.yml
+
+- name: Launch containers
+  shell: make re
+  args:
+    chdir: /opt/cloud_inception/inception
