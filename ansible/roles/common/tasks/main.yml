@@ -1,21 +1,141 @@
-- name: Install Docker, Docker Compose, and Make
-  apt:
-    name:
-      - docker.io
-      - docker-compose
-      - make
-    state: present
-    update_cache: yes
+---
+- name: Prepare environment and deploy application
+  hosts: cloud1
+  become: true
+  vars_files:
+    - secrets.yaml       # For any secrets you use in docker installation (optional)
+    - ansible/vm_external_ip.yaml  # For the ExternalIP variable used in /etc/hosts update
 
-- name: Enable and start Docker
-  systemd:
-    name: docker
-    enabled: yes
-    state: started
+  tasks:
+    # --- Check and install Docker, Docker Compose, Make ---
+    - name: Check Docker installation
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+      no_log: true
 
-- name: Add entry to /etc/hosts for kadjane.42.fr
-  lineinfile:
-    path: /etc/hosts
-    line: "10.16.79.228 kadjane.42.fr"
-    state: present
-    create: yes
+    - name: Check Docker Compose installation
+      command: docker compose version
+      register: docker_compose_installed
+      ignore_errors: yes
+      no_log: true
+
+    - name: Check Make installation
+      command: make --version
+      register: make_installed
+      ignore_errors: yes
+      no_log: true
+
+    - name: Update APT cache if needed
+      apt:
+        update_cache: yes
+      when: docker_installed.rc != 0 or docker_compose_installed.rc != 0
+
+    - name: Install prerequisite packages for Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - gnupg-agent
+        state: present
+      when: docker_installed.rc != 0 or docker_compose_installed.rc != 0
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: docker_installed.rc != 0 or docker_compose_installed.rc != 0
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      when: docker_installed.rc != 0 or docker_compose_installed.rc != 0
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+      when: docker_installed.rc != 0
+
+    - name: Ensure Docker CLI plugin directory exists
+      file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: '0755'
+      when: docker_compose_installed.rc != 0
+
+    - name: Download Docker Compose binary
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: '0755'
+      when: docker_compose_installed.rc != 0
+
+    - name: Install make
+      apt:
+        name: make
+        state: latest
+      when: make_installed.rc != 0
+
+    - name: Add user tariq to docker group
+      user:
+        name: tariq
+        groups: docker
+        append: yes
+      when: docker_installed.rc != 0
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+      when: docker_installed.rc != 0 or docker_compose_installed.rc != 0
+
+    # --- Clone or update app repository ---
+    - name: Check if repository exists
+      stat:
+        path: /home/tariq/cloud-1-deploy-dir/.git
+      register: repo_status
+
+    - name: Clone repository if missing
+      git:
+        repo: 'https://github.com/tariqelb/cloud-1.git'
+        dest: /home/tariq/cloud-1-deploy-dir
+        version: master
+      when: not repo_status.stat.exists
+
+    - name: Pull latest changes if repository exists
+      git:
+        repo: 'https://github.com/tariqelb/cloud-1.git'
+        # repo: 'https://github.com/tariqelb/cloud-1.git'
+        dest: /home/tariq/cloud-1-deploy-dir
+        version: master
+        update: yes
+      when: repo_status.stat.exists == True
+
+    - name: Always copy .env_example to .env (overwrite if exists)
+      copy:
+        src: /home/tariq/cloud-1-deploy-dir/app/.env_example
+        dest: /home/tariq/cloud-1-deploy-dir/app/.env
+        remote_src: yes
+        force: yes
+
+
+    - name: Run Makefile to deploy app
+      make:
+        chdir: /home/tariq/cloud-1-deploy-dir/app
+        target: all
+
+    - name: Add Cloud Vm external IP address to /etc/hosts
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ ExternalIP }} tel-bouh.1337.ma"
+        state: present
+ 

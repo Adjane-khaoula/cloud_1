@@ -1,0 +1,22 @@
+{
+  "vm_instance_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "projects/sapient-tangent-456419-j5/zones/us-central1-a/instances/tariq-cloud-1-vm"
+  },
+  "vm_instance_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "34.66.134.174"
+  },
+  "vm_instance_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "tariq-cloud-1-vm"
+  },
+  "vm_user": {
+    "sensitive": false,
+    "type": "string",
+    "value": "tariq"
+  }
+}

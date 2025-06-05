@@ -1,0 +1,78 @@
+version: "3.8"
+services:
+  nginx:
+    container_name: nginx
+    build: ./nginx/.
+    hostname: nginx
+    networks:
+      - cloud-1-network
+    volumes:
+      - cloud-1-wp-vol:/var/www/html
+    ports:
+      - 443:443
+    depends_on:
+      - wordpress
+      - adminer
+    restart:  always
+#
+#
+  mariadb:
+    container_name: mariadb
+    build: ./mariadb/.
+    hostname: mariadb
+    env_file:
+      - ./.env
+    networks:
+      - cloud-1-network
+    volumes:
+      - cloud-1-db-vol:/var/lib/mysql
+    ports:
+      - 3306:3306
+    restart:  always
+#
+#
+  wordpress:
+    container_name: wordpress
+    build: ./wordpress/.
+    hostname: wordpress
+    env_file:
+      - ./.env
+    networks:
+      - cloud-1-network
+    volumes:
+      - cloud-1-wp-vol:/var/www/html
+    ports:
+      - 9000:9000
+    depends_on:
+      - mariadb
+    restart:  always
+#
+  adminer:
+    container_name: adminer
+    build: ./adminer/.
+    hostname: adminer
+    networks:
+      - cloud-1-network
+    depends_on:
+      - mariadb
+    ports:
+      - 8080:8080
+    restart: always
+#
+volumes:
+  cloud-1-wp-vol:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${HOME}/cloud-1-volume/wp
+      o: bind
+  cloud-1-db-vol:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${HOME}/cloud-1-volume/db
+      o: bind
+#
+networks:
+  cloud-1-network:
+    name: cloud-1-network
