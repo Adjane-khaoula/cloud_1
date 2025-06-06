@@ -1,6 +1,0 @@
-- name: Deploy WordPress Stack
-  hosts: servers
-  become: yes
-  roles:
-    - common
-    - deploy

@@ -13,7 +13,3 @@
       make:
         chdir: '/home/tariq/cloud-1-deploy-dir/app'
         target: "{{ cleanup_target }}"
-
-# To call f clean use the follow cammand
-# ansible-playbook clean-app-deployment-playbook.yaml -e "cleanup_target=fclean"
-

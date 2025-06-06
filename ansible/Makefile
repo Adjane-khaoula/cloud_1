@@ -12,34 +12,17 @@ all: inventory install-deps
 install-deps:
 	@echo "${GREEN}>>>> Running install-deps${NC}"
 	@echo "$(BLUE)For sudo password check terraform.tfvars for ssh_password in terraform folder$(NC)"
-	@ansible-playbook -i ./inventory.yaml /home/khaoula/cloud_1/ansible/roles/common/tasks/main.yml  --ask-become-pass
+	@ansible-playbook -i ./inventory.yaml /home/khaoula/cloud_1/ansible/roles/deploy.yaml  --ask-become-pass
 
-# deploy:
-# 	@echo "${GREEN}>>>> Running deploy${NC}"
-# 	@echo "$(BLUE)For sudo password check terraform.tfvars for ssh_password in terraform folder$(NC)"
-# 	@ansible-playbook -i ./inventory.yaml deploy-app-playbook.yaml  --ask-become-pass
-
-# check:
-# 	@echo "${GREEN}>>>> Running check${NC}"
-# 	@echo "$(BLUE)For sudo password check terraform.tfvars for ssh_password in terraform folder$(NC)"
-# 	@ansible-playbook -i ./inventory.yaml check-containers-health-playbook.yaml  --ask-become-pass
 
 clean:
 	@echo "${GREEN}>>>> Running clean${NC}"
 	@echo "$(BLUE)For sudo password check terraform.tfvars for ssh_password in terraform folder$(NC)"
-	@ansible-playbook -i ./inventory.yaml /home/khaoula/cloud_1/ansible/roles/common/tasks/clean-app-deployment-playbook.yaml  --ask-become-pass
+	@ansible-playbook -i ./inventory.yaml /home/khaoula/cloud_1/ansible/roles/clean-app-deployment-playbook.yaml  --ask-become-pass
 
-# uninstall-deps:
-# 	@echo ">>> Running uninstall-deps${NC}"
-# 	@echo "$(BLUE)For sudo password check terraform.tfvars for ssh_password in terraform folder$(NC)"
-# 	@ansible-playbook -i ./inventory.yaml uninstall-dependencies-playbook.yaml --ask-become-pass
 
 inventory:
 	@echo  "${GREEN}>>> Running inventory generation${NC}"
 	@# Define inventory from terraform outputs
 	@rm -rf inventory.yaml
 	@bash ./generate_inventry.sh
-
-# destroy: clean uninstall-deps
-
-# .PHONY: all inventory install-deps deploy check clean uninstall-deps destroy

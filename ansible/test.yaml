@@ -3,9 +3,7 @@
   hosts: cloud1
   become: true
   vars_files:
-    - secrets.yaml       # For any secrets you use in docker installation (optional)
-    - ansible/vm_external_ip.yaml  # For the ExternalIP variable used in /etc/hosts update
-
+    - vm_external_ip.yaml
   tasks:
     # --- Check and install Docker, Docker Compose, Make ---
     - name: Check Docker installation
@@ -105,14 +103,14 @@
 
     - name: Clone repository if missing
       git:
-        repo: 'https://github.com/tariqelb/cloud-1.git'
+        repo: 'https://github.com/Adjane-khaoula/cloud_1.git'
         dest: /home/tariq/cloud-1-deploy-dir
         version: master
       when: not repo_status.stat.exists
 
     - name: Pull latest changes if repository exists
       git:
-        repo: 'https://github.com/tariqelb/cloud-1.git'
+        repo: 'https://github.com/Adjane-khaoula/cloud_1.git'
         # repo: 'https://github.com/tariqelb/cloud-1.git'
         dest: /home/tariq/cloud-1-deploy-dir
         version: master

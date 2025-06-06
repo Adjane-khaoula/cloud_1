@@ -1,0 +1,109 @@
+---
+- name: Prepare environment and deploy application
+  hosts: cloud1
+  become: true
+  vars_files:
+    - vm_external_ip.yaml
+
+  tasks:
+    # --- Update package cache ---
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+      tags: packages
+
+    # --- Install prerequisite packages ---
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - gnupg-agent
+          - make
+        state: present
+      tags: packages
+
+    # --- Docker installation ---
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags: docker
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      tags: docker
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+      tags: docker
+
+    - name: Ensure Docker CLI plugin directory exists
+      file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: '0755'
+      tags: docker
+
+    - name: Download Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: '0755'
+      tags: docker
+
+    # --- Docker service management ---
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+      tags: docker
+
+    - name: Add user to docker group
+      user:
+        name: tariq
+        groups: docker
+        append: yes
+      tags: docker
+
+    # --- Application deployment ---
+    - name: Clone or update application repository
+      git:
+        repo: 'https://github.com/Adjane-khaoula/cloud_1.git'
+        dest: /home/tariq/cloud-1-deploy-dir
+        version: main
+        update: yes
+      tags: app
+
+    - name: Ensure .env file is configured
+      copy:
+        src: /home/tariq/cloud-1-deploy-dir/app/.env_example
+        dest: /home/tariq/cloud-1-deploy-dir/app/.env
+        remote_src: yes
+        force: yes
+      tags: app
+
+    - name: Deploy application using Makefile
+      make:
+        chdir: /home/tariq/cloud-1-deploy-dir/app
+        target: all
+      tags: app
+
+    # --- Network configuration ---
+    - name: Configure /etc/hosts with external IP
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ ExternalIP }} tel-bouh.1337.ma"
+        state: present
+      tags: networking
+
